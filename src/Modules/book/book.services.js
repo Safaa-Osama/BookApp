@@ -128,7 +128,7 @@ export const skipLimit = async (req, res, next) => {
 export const yearInteger = async (req, res, next) => {
         try {
                 const result = await bookModel.find(
-                         { b_year : { $type : 16 } } 
+                        { b_year: { $type: 16 } }
 
                 ).toArray();
                 res.status(200).json({ message: "done", result });
@@ -137,3 +137,100 @@ export const yearInteger = async (req, res, next) => {
                 res.status(500).json({ message: 'Error in server', error: error.message });
         }
 }
+
+export const excludeGenres = async (req, res, next) => {
+        try {
+                const result = await bookModel.find({
+                        b_genres: { $nin: ["drama", "advanyure"] }
+                }).toArray();
+                res.status(200).json({ message: "done", result });
+        } catch (error) {
+                res.status(500).json({ message: 'Error in server', error: error.message });
+        }
+}
+
+export const deleteBook = async (req, res, next) => {
+        try {
+                const year = Number(req.query.year);
+                const books = await bookModel.find({
+                        b_year: { $lte: year }
+                }).toArray();
+                const deletedBooks = await bookModel.deleteMany(books);
+                res.status(200).json({ message: "done", deletedBooks });
+        } catch (error) {
+                res.status(500).json({ message: 'Error in server', error: error.message });
+        }
+}
+
+export const bookAgregate1 = async (req, res, next) => {
+        try {
+                const books = await bookModel.aggregate([
+                        { $match: { b_year: { $gt: 2000 } } },
+                        { $sort: { b_year: -1 } }
+                ]).toArray();
+                res.status(200).json({ message: "done", books });
+        }
+        catch (error) {
+                res.status(500).json({ message: 'Error in server', error: error.message });
+        }
+};
+
+export const bookAgregate2 = async (req, res, next) => {
+        try {
+                const books = await bookModel.aggregate([
+                        { $match: { b_year: { $gt: 2000 } } },
+                        {  $project: {
+                                        _id: 0,
+                                        b_title: 1,
+                                        b_author: 1,
+                                        b_year: 1
+                                }  }
+                ]).toArray();
+                res.status(200).json({ message: "done", books });
+        }
+        catch (error) {
+                res.status(500).json({ message: 'Error in server', error: error.message });
+        }
+};
+
+export const bookAgregate3 = async (req, res, next) => {
+       try {
+    const books = await bookModel.aggregate([
+  { $unwind: "$genres" },
+  {
+    $project: {
+      _id: 0,
+      b_title: 1,
+      b_genres: "$genres"
+    }
+  }
+]).toArray();
+
+                res.status(200).json({ message: "done", books });
+        }
+        catch (error) {
+                res.status(500).json({ message: 'Error in server', error: error.message });
+        }
+};
+
+export const bookAgregate4 = async (req, res, next) => {
+       try {
+    const result = await bookModel.aggregate([
+  {
+    $lookup: {
+      from: "logs",       
+      localField: "_id",      
+      foreignField: "bookId", 
+      as: "logs"
+    }
+  }
+]).toArray();
+
+                res.status(200).json({ message: "done", result });
+        }
+        catch (error) {
+                res.status(500).json({ message: 'Error in server', error: error.message });
+        }
+};
+
+
